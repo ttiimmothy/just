@@ -345,7 +345,7 @@ fn env_attribute_multiple() {
 }
 
 #[test]
-fn env_attribute_1_arg() {
+fn env_attribute_too_few_arguments() {
   Test::new()
     .justfile(
       "
@@ -368,7 +368,7 @@ fn env_attribute_1_arg() {
 }
 
 #[test]
-fn env_attribute_3_args() {
+fn env_attribute_too_many_arguments() {
   Test::new()
     .justfile(
       "
