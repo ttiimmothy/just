@@ -343,6 +343,20 @@ fn env_attribute_multiple() {
 }
 
 #[test]
+fn env_attribute_in_recipe_params() {
+  Test::new()
+    .justfile(
+      r#"
+[env("foo", "bar")]
+baz x=`echo ${foo}.txt`:
+    @echo {{x}}
+"#,
+    )
+    .stdout("bar.txt\n")
+    .run();
+}
+
+#[test]
 fn env_attribute_too_few_arguments() {
   Test::new()
     .justfile(
