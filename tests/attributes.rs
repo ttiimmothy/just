@@ -320,11 +320,10 @@ fn env_attribute_single() {
       "
         [env('MY_VAR', 'my_value')]
         foo:
-          echo $MY_VAR
+          @echo $MY_VAR
       ",
     )
     .stdout("my_value\n")
-    .stderr("echo $MY_VAR\n")
     .run();
 }
 
@@ -336,11 +335,10 @@ fn env_attribute_multiple() {
         [env('VAR1', 'value1')]
         [env('VAR2', 'value 2')]
         foo:
-          echo $VAR1 $VAR2
+          @echo $VAR1 $VAR2
       ",
     )
     .stdout("value1 value 2\n")
-    .stderr("echo $VAR1 $VAR2\n")
     .run();
 }
 
