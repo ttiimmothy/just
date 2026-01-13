@@ -357,6 +357,32 @@ baz x=`echo ${foo}.txt`:
 }
 
 #[test]
+fn env_attribute_not_in_env_function() {
+  Test::new()
+    .justfile(
+      r#"
+
+[env("foo", "bar")]
+baz:
+  @echo {{ env("foo") }}.txt
+
+    "#,
+    )
+    .stderr(
+      r#"
+error: Call to function `env` failed: environment variable `foo` not present
+ ——▶ justfile:4:12
+  │
+4 │   @echo {{ env("foo") }}.txt
+  │            ^^^
+
+"#,
+    )
+    .status(EXIT_FAILURE)
+    .run();
+}
+
+#[test]
 fn env_attribute_too_few_arguments() {
   Test::new()
     .justfile(
