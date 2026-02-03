@@ -324,7 +324,7 @@ fn env_attribute_single() {
       ",
     )
     .stdout("my_value\n")
-    .run();
+    .success();
 }
 
 #[test]
@@ -339,7 +339,7 @@ fn env_attribute_multiple() {
       ",
     )
     .stdout("value1 value 2\n")
-    .run();
+    .success();
 }
 
 #[test]
@@ -353,7 +353,7 @@ baz x=`echo ${foo}.txt`:
 "#,
     )
     .stdout("bar.txt\n")
-    .run();
+    .success();
 }
 
 #[test]
@@ -378,8 +378,7 @@ error: Call to function `env` failed: environment variable `foo` not present
 
 "#,
     )
-    .status(EXIT_FAILURE)
-    .run();
+    .failure();
 }
 
 #[test]
@@ -401,8 +400,7 @@ fn env_attribute_too_few_arguments() {
     │  ^^^
 ",
     )
-    .status(EXIT_FAILURE)
-    .run();
+    .failure();
 }
 
 #[test]
@@ -424,6 +422,5 @@ fn env_attribute_too_many_arguments() {
     │  ^^^
 ",
     )
-    .status(EXIT_FAILURE)
-    .run();
+    .failure();
 }
