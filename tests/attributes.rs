@@ -424,3 +424,26 @@ fn env_attribute_too_many_arguments() {
     )
     .failure();
 }
+
+#[test]
+fn env_attribute_duplicate_error() {
+  Test::new()
+    .justfile(
+      "
+        [env('VAR1', 'value1')]
+        [env('VAR1', 'value 2')]
+        foo:
+          @echo $VAR1
+      ",
+    )
+    .stderr(
+      "
+  error: Environment variable `VAR1` first set on line 1 is set again on line 2
+   ——▶ justfile:2:2
+    │
+  2 │ [env('VAR1', 'value 2')]
+    │  ^^^
+",
+    )
+    .failure();
+}
