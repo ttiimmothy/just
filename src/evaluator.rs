@@ -3,7 +3,7 @@ use super::*;
 pub(crate) struct Evaluator<'src: 'run, 'run> {
   assignments: Option<&'run Table<'src, Assignment<'src>>>,
   context: Option<ExecutionContext<'src, 'run>>,
-  env_vars: BTreeMap<String, String>,
+  env: BTreeMap<String, String>,
   is_dependency: bool,
   non_const_assignments: Table<'src, Name<'src>>,
   scope: Scope<'src, 'run>,
@@ -54,7 +54,7 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     let mut evaluator = Self {
       assignments: Some(assignments),
       context: None,
-      env_vars: BTreeMap::new(),
+      env: BTreeMap::new(),
       is_dependency: false,
       non_const_assignments: Table::new(),
       scope,
@@ -203,7 +203,7 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     let mut evaluator = Self {
       assignments: Some(&module.assignments),
       context: Some(context),
-      env_vars: BTreeMap::new(),
+      env: BTreeMap::new(),
       is_dependency: false,
       non_const_assignments: Table::new(),
       scope,
@@ -276,12 +276,12 @@ impl<'src, 'run> Evaluator<'src, 'run> {
           return Ok(format!("`{contents}`"));
         }
 
-        Self::run_command(context, &self.env_vars, &self.scope, contents, &[]).map_err(
-          |output_error| Error::Backtick {
+        Self::run_command(context, &self.env, &self.scope, contents, &[]).map_err(|output_error| {
+          Error::Backtick {
             token: *token,
             output_error,
-          },
-        )
+          }
+        })
       }
       Expression::Call { thunk } => {
         use Thunk::*;
@@ -439,7 +439,7 @@ impl<'src, 'run> Evaluator<'src, 'run> {
 
   pub(crate) fn run_command(
     context: &ExecutionContext,
-    env_vars: &BTreeMap<String, String>,
+    env: &BTreeMap<String, String>,
     scope: &Scope,
     command: &str,
     args: &[&str],
@@ -464,7 +464,7 @@ impl<'src, 'run> Evaluator<'src, 'run> {
       })
       .stdout(Stdio::piped());
 
-    for (key, value) in env_vars {
+    for (key, value) in env {
       cmd.env(key, value);
     }
 
@@ -506,13 +506,13 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     recipe: &Recipe<'src>,
     scope: &'run Scope<'src, 'run>,
   ) -> RunResult<'src, (Scope<'src, 'run>, Vec<String>)> {
-    let mut env_vars = BTreeMap::new();
+    let mut env = BTreeMap::new();
     for attribute in &recipe.attributes {
       if let Attribute::Env(key, value) = attribute {
-        env_vars.insert(key.cooked.clone(), value.cooked.clone());
+        env.insert(key.cooked.clone(), value.cooked.clone());
       }
     }
-    let mut evaluator = Self::new(context, env_vars, is_dependency, scope);
+    let mut evaluator = Self::new(context, env, is_dependency, scope);
 
     let mut positional = Vec::new();
 
@@ -564,14 +564,14 @@ impl<'src, 'run> Evaluator<'src, 'run> {
 
   pub(crate) fn new(
     context: &ExecutionContext<'src, 'run>,
-    env_vars: BTreeMap<String, String>,
+    env: BTreeMap<String, String>,
     is_dependency: bool,
     scope: &'run Scope<'src, 'run>,
   ) -> Self {
     Self {
       assignments: None,
       context: Some(*context),
-      env_vars,
+      env,
       is_dependency,
       non_const_assignments: Table::new(),
       scope: scope.child(),
