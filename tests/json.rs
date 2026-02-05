@@ -90,6 +90,7 @@ struct Settings<'a> {
   export: bool,
   fallback: bool,
   ignore_comments: bool,
+  lazy: bool,
   no_exit_message: bool,
   positional_arguments: bool,
   quiet: bool,

@@ -74,6 +74,55 @@ impl<'src> Justfile<'src> {
     )
   }
 
+  fn needed_variables<'run>(
+    &'run self,
+    invocations: &[Invocation<'src, 'run>],
+  ) -> BTreeSet<&'src str> {
+    let mut needed = BTreeSet::new();
+
+    for assignment in self.assignments.values() {
+      if assignment.export || self.settings.export {
+        needed.insert(assignment.name.lexeme());
+      }
+    }
+
+    let my_path = &self.module_path;
+
+    let mut all_recipes: Vec<&Recipe> = Vec::new();
+    let mut recipe_stack: Vec<&Recipe> = invocations.iter().map(|i| i.recipe).collect();
+    let mut visited = BTreeSet::new();
+
+    while let Some(recipe) = recipe_stack.pop() {
+      if !visited.insert(recipe.name()) {
+        continue;
+      }
+      all_recipes.push(recipe);
+      for dep in &recipe.dependencies {
+        recipe_stack.push(&dep.recipe);
+      }
+    }
+
+    for recipe in all_recipes {
+      if recipe.module_path() == my_path {
+        needed.extend(recipe.referenced_variables());
+      }
+    }
+
+    let mut work: Vec<&str> = needed.iter().copied().collect();
+    while let Some(var) = work.pop() {
+      if let Some(assignment) = self.assignments.get(var) {
+        for referenced in assignment.value.variables() {
+          let name = referenced.lexeme();
+          if needed.insert(name) {
+            work.push(name);
+          }
+        }
+      }
+    }
+
+    needed
+  }
+
   fn evaluate_scopes<'run>(
     &'run self,
     arena: &'run Arena<Scope<'src, 'run>>,
@@ -82,14 +131,18 @@ impl<'src> Justfile<'src> {
     root: &'run Scope<'src, 'run>,
     scopes: &mut BTreeMap<String, (&'run Self, &'run Scope<'src, 'run>)>,
     search: &'run Search,
+    invocations: Option<&[Invocation<'src, 'run>]>,
   ) -> RunResult<'src> {
-    let scope = Evaluator::evaluate_assignments(config, dotenv, self, root, search)?;
+    let needed = invocations.map(|inv| self.needed_variables(inv));
+
+    let scope =
+      Evaluator::evaluate_assignments(config, dotenv, self, root, search, needed.as_ref())?;
 
     let scope = arena.alloc(scope);
     scopes.insert(self.module_path.clone(), (self, scope));
 
     for module in self.modules.values() {
-      module.evaluate_scopes(arena, config, dotenv, scope, scopes, search)?;
+      module.evaluate_scopes(arena, config, dotenv, scope, scopes, search, invocations)?;
     }
 
     Ok(())
@@ -123,7 +176,47 @@ impl<'src> Justfile<'src> {
     let root = Scope::root();
     let arena = Arena::new();
     let mut scopes = BTreeMap::new();
-    self.evaluate_scopes(&arena, config, &dotenv, &root, &mut scopes, search)?;
+
+    let use_lazy = self.settings.lazy && matches!(&config.subcommand, Subcommand::Run { .. });
+
+    if use_lazy {
+      let arguments = arguments.iter().map(String::as_str).collect::<Vec<&str>>();
+      let invocations = InvocationParser::parse_invocations(self, &arguments)?;
+
+      self.evaluate_scopes(
+        &arena,
+        config,
+        &dotenv,
+        &root,
+        &mut scopes,
+        search,
+        Some(&invocations),
+      )?;
+
+      if config.one && invocations.len() > 1 {
+        return Err(Error::ExcessInvocations {
+          invocations: invocations.len(),
+        });
+      }
+
+      let ran = Ran::default();
+      for invocation in invocations {
+        Self::run_recipe(
+          &invocation.arguments,
+          config,
+          &dotenv,
+          false,
+          &ran,
+          invocation.recipe,
+          &scopes,
+          search,
+        )?;
+      }
+
+      return Ok(());
+    }
+
+    self.evaluate_scopes(&arena, config, &dotenv, &root, &mut scopes, search, None)?;
 
     let scope = scopes.get(&self.module_path).unwrap().1;
 

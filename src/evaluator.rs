@@ -106,6 +106,9 @@ impl<'src, 'run> Evaluator<'src, 'run> {
         Setting::IgnoreComments(value) => {
           settings.ignore_comments = value;
         }
+        Setting::Lazy(value) => {
+          settings.lazy = value;
+        }
         Setting::NoExitMessage(value) => {
           settings.no_exit_message = value;
         }
@@ -162,6 +165,7 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     module: &'run Justfile<'src>,
     parent: &'run Scope<'src, 'run>,
     search: &'run Search,
+    needed: Option<&BTreeSet<&'src str>>,
   ) -> RunResult<'src, Scope<'src, 'run>>
   where
     'src: 'run,
@@ -210,6 +214,11 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     };
 
     for assignment in module.assignments.values() {
+      if let Some(needed) = needed {
+        if !needed.contains(assignment.name.lexeme()) {
+          continue;
+        }
+      }
       evaluator.evaluate_assignment(assignment)?;
     }
 
