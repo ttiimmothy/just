@@ -19,6 +19,32 @@ fn lazy_unused_not_evaluated() {
 }
 
 #[test]
+fn lazy_used_is_evaluated() {
+  Test::new()
+    .justfile(
+      "
+        set lazy
+
+        used := `exit 1`
+
+        @foo:
+          echo foo
+          echo {{used}}
+      ",
+    )
+    .stderr(
+      "
+        error: Backtick failed with exit code 1
+         ——▶ justfile:3:9
+          │
+        3 │ used := `exit 1`
+          │         ^^^^^^^^
+      ",
+    )
+    .failure();
+}
+
+#[test]
 fn eager_unused_evaluated() {
   Test::new()
     .justfile(
