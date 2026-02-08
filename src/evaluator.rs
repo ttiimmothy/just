@@ -214,10 +214,9 @@ impl<'src, 'run> Evaluator<'src, 'run> {
     };
 
     for assignment in module.assignments.values() {
-      if needed.is_some_and(|needed| !needed.contains(assignment.name.lexeme())) {
-        continue;
+      if needed.is_none_or(|needed| needed.contains(assignment.name.lexeme())) {
+        evaluator.evaluate_assignment(assignment)?;
       }
-      evaluator.evaluate_assignment(assignment)?;
     }
 
     Ok(evaluator.scope)
