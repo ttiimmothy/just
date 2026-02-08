@@ -1,6 +1,15 @@
 use super::*;
 
 #[test]
+fn lazy_is_unstable() {
+  Test::new()
+    .justfile("set lazy\n\nfoo:\n  @echo hello")
+    .arg("foo")
+    .stderr_regex("error: The `lazy` setting is currently unstable\\..*")
+    .status(1);
+}
+
+#[test]
 fn lazy_unused_not_evaluated() {
   Test::new()
     .justfile(
@@ -13,6 +22,7 @@ fn lazy_unused_not_evaluated() {
           @echo hello
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("hello\n")
     .success();
@@ -32,6 +42,7 @@ fn lazy_used_is_evaluated() {
           echo {{used}}
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .stderr(
       "
         error: Backtick failed with exit code 1
@@ -81,6 +92,7 @@ fn lazy_exports_always_evaluated() {
           @echo $X
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("exported\n")
     .success();
@@ -100,6 +112,7 @@ fn lazy_export_setting_evaluates_all() {
           @echo $X
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("exported\n")
     .success();
@@ -117,6 +130,7 @@ fn lazy_submodule_unused_root() {
         mod sub
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .write("sub/mod.just", "foo:\n  @echo hello")
     .args(["sub", "foo"])
     .stdout("hello\n")
@@ -139,6 +153,7 @@ fn lazy_transitive_evaluated() {
           @echo {{a}}
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("value\n")
     .success();
@@ -157,6 +172,7 @@ fn lazy_explicit_true() {
           @echo hello
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("hello\n")
     .success();
@@ -175,6 +191,7 @@ fn lazy_explicit_false() {
           @echo hello
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stderr(
       "
@@ -202,6 +219,7 @@ fn lazy_used_variable_evaluated() {
           @echo {{used}}
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("bar\n")
     .success();
@@ -223,6 +241,7 @@ fn lazy_dependency_variable_evaluated() {
           @echo {{val}}
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("dep_value\n")
     .success();
@@ -242,6 +261,7 @@ fn lazy_parameter_default_evaluated() {
           @echo {{val}}
       ",
     )
+    .env("JUST_UNSTABLE", "1")
     .arg("foo")
     .stdout("default\n")
     .success();
