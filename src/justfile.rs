@@ -137,7 +137,7 @@ impl<'src> Justfile<'src> {
     search: &'run Search,
     invocations: Option<&[Invocation<'src, 'run>]>,
   ) -> RunResult<'src> {
-    let needed = invocations.map(|inv| self.needed_variables(inv));
+    let needed = invocations.map(|invocations| self.needed_variables(invocations));
 
     let scope =
       Evaluator::evaluate_assignments(config, dotenv, self, root, search, needed.as_ref())?;
