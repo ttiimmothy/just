@@ -88,17 +88,21 @@ impl<'src> Justfile<'src> {
 
     let my_path = &self.module_path;
 
-    let mut all_recipes: Vec<&Recipe> = Vec::new();
-    let mut recipe_stack: Vec<&Recipe> = invocations.iter().map(|i| i.recipe).collect();
+    let mut all_recipes = Vec::new();
+    let mut stack = invocations
+      .iter()
+      .map(|invocation| invocation.recipe)
+      .collect::<Vec<&Recipe>>();
     let mut visited = BTreeSet::new();
 
-    while let Some(recipe) = recipe_stack.pop() {
+    while let Some(recipe) = stack.pop() {
+      // todo: is this wrong? recipes may be in different modules but have the same name
       if !visited.insert(recipe.name()) {
         continue;
       }
       all_recipes.push(recipe);
-      for dep in &recipe.dependencies {
-        recipe_stack.push(&dep.recipe);
+      for dependency in &recipe.dependencies {
+        stack.push(&dependency.recipe);
       }
     }
 
