@@ -181,9 +181,7 @@ impl<'src> Justfile<'src> {
     let arena = Arena::new();
     let mut scopes = BTreeMap::new();
 
-    let use_lazy = self.settings.lazy && matches!(&config.subcommand, Subcommand::Run { .. });
-
-    if use_lazy {
+    if self.settings.lazy && matches!(config.subcommand, Subcommand::Run { .. }) {
       let arguments = arguments.iter().map(String::as_str).collect::<Vec<&str>>();
       let invocations = InvocationParser::parse_invocations(self, &arguments)?;
 
